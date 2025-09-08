@@ -1,17 +1,11 @@
-// Archivo: pages/api/debug-env.ts
+// Archivo: src/app/api/debug-env/route.ts
 // Endpoint para verificar variables de entorno en producción
 
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  // Solo permitir GET
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+export const dynamic = 'force-dynamic';
 
+export async function GET(request: NextRequest) {
   // Información de debug
   const debugInfo = {
     timestamp: new Date().toISOString(),
@@ -29,5 +23,5 @@ export default function handler(
     ).sort()
   };
 
-  return res.status(200).json(debugInfo);
+  return NextResponse.json(debugInfo);
 }
