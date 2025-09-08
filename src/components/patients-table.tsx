@@ -451,7 +451,9 @@ export function PatientsTable({
 const PatientRow = memo(({ patient }: { patient: Patient }) => {
   const formatDate = useCallback((dateString: string) => {
     if (!dateString) return '-';
-    const date = new Date(dateString);
+    // Evitar problemas de zona horaria parseando la fecha como local
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
