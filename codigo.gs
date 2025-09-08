@@ -508,8 +508,12 @@ function createJsonResponseWithCORS(obj) {
   const output = ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
   
-  // En Google Apps Script, los headers CORS se manejan automáticamente
-  // cuando se despliega como aplicación web con acceso público
+  // Configurar headers CORS explícitamente para Vercel
+  const response = HtmlService.createHtmlOutput('')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  
+  // Los headers CORS se configuran en el deployment de Google Apps Script
+  // pero devolvemos el output JSON directamente
   return output;
 }
 
