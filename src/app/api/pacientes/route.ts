@@ -66,21 +66,30 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    console.log('Proxying POST request to Google Apps Script:', body);
-
-    // El Google Apps Script que te proporcioné devuelve JSON directamente,
-    // por lo que no es necesario manejar redirecciones (302).
+    console.log('POST request to Google Apps Script:', {
+      url: API_URL,
+      action: body.action,
+      timestamp: new Date().toISOString()
+    });
+    
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify(body),
     });
 
+    console.log('Google Apps Script response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Google Apps Script POST response not ok:', response.status, errorText);
+      console.error('Google Apps Script error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
       return NextResponse.json(
         { error: `Google Apps Script error: ${response.status}`, details: errorText },
         { status: response.status }
@@ -88,12 +97,25 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await response.json();
+    console.log('Google Apps Script success response:', {
+      status: result.status,
+      hasData: !!result.data
+    });
+    
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('Proxy API POST error:', error);
+    console.error('Error in POST /api/pacientes:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        status: 'error',
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

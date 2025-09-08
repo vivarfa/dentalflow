@@ -53,18 +53,41 @@ export type FormState = {
   historyId?: string;
 };
 
-async function postToActionAPI(action: string, data: any) {
+async function postToActionAPI(action: string, data: any): Promise<any> {
+    console.log('Sending action to API:', {
+        action,
+        dataKeys: Object.keys(data || {}),
+        timestamp: new Date().toISOString()
+    });
+    
     const response = await fetch(PROXY_API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
         body: JSON.stringify({ action, data }),
     });
     
+    console.log('API response status:', response.status);
+    
     if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('API error response:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText
+        });
+        throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
     }
     
-    return await response.json();
+    const result = await response.json();
+    console.log('API success response:', {
+        status: result.status,
+        hasData: !!result.data
+    });
+    
+    return result;
 }
 
 export async function addPatient(prevState: FormState, formData: FormData): Promise<FormState> {
@@ -168,6 +191,7 @@ export async function addCita(prevState: FormState, formData: FormData): Promise
   const validatedFields = appointmentSchema.safeParse(rawData);
 
   if (!validatedFields.success) {
+    console.error('Validation error for addCita:', validatedFields.error.flatten().fieldErrors);
     return {
       message: "Por favor, corrija los errores en el formulario.",
       errors: validatedFields.error.flatten().fieldErrors as Record<string, string>,
@@ -176,9 +200,11 @@ export async function addCita(prevState: FormState, formData: FormData): Promise
   }
 
   try {
+    console.log('Adding cita with data:', validatedFields.data);
     const result = await postToActionAPI("addCita", validatedFields.data);
 
     if (result.status === "success") {
+      console.log('Cita created successfully, revalidating paths');
       revalidatePath("/");
       revalidatePath(`/pacientes/${validatedFields.data.ID_Paciente}`);
       return {
@@ -187,6 +213,7 @@ export async function addCita(prevState: FormState, formData: FormData): Promise
         appointmentId: result.data?.appointmentId,
       };
     } else {
+      console.error('Error creating cita:', result.message);
       return {
         message: result.message || "Error al programar la cita.",
         success: false,
@@ -194,8 +221,9 @@ export async function addCita(prevState: FormState, formData: FormData): Promise
     }
   } catch (e) {
     const error = e as Error;
+    console.error('Exception in addCita:', error);
     return {
-      message: `Error de red: ${error.message}`,
+      message: `Error de conexión: ${error.message}`,
       success: false,
     };
   }
@@ -243,6 +271,7 @@ export async function addHistorial(prevState: FormState, formData: FormData): Pr
   const validatedFields = medicalHistorySchema.safeParse(rawData);
 
   if (!validatedFields.success) {
+    console.error('Validation error for addHistorial:', validatedFields.error.flatten().fieldErrors);
     return {
       message: "Por favor, corrija los errores en el formulario.",
       errors: validatedFields.error.flatten().fieldErrors as Record<string, string>,
@@ -251,18 +280,22 @@ export async function addHistorial(prevState: FormState, formData: FormData): Pr
   }
 
   try {
+    console.log('Adding historial with data:', validatedFields.data);
     const result = await postToActionAPI("addHistorial", validatedFields.data);
 
     if (result.status === "success") {
+      console.log('Historial created successfully, revalidating paths');
       revalidatePath("/");
       revalidatePath(`/pacientes/${validatedFields.data.ID_Paciente}`);
       return { message: "Historial clínico agregado con éxito.", success: true, historyId: result.data.historyId || result.data.ID_Historial };
     } else {
+      console.error('Error creating historial:', result.message);
       return { message: result.message || "Error al agregar el historial clínico.", success: false };
     }
   } catch (e) {
     const error = e as Error;
-    return { message: `Error de red: ${error.message}`, success: false };
+    console.error('Exception in addHistorial:', error);
+    return { message: `Error de conexión: ${error.message}`, success: false };
   }
 }
 

@@ -31,6 +31,11 @@ function clearCache() {
   }
 }
 
+// --- MANEJADOR DE PETICIONES OPTIONS (para CORS) ---
+function doOptions(e) {
+  return createJsonResponseWithCORS({ message: 'CORS preflight successful' });
+}
+
 // --- MANEJADOR DE PETICIONES GET ---
 function doGet(e) {
   try {
@@ -75,47 +80,119 @@ function doGet(e) {
       default:
         throw new Error("Acción GET no válida.");
     }
-    return createJsonResponse({ status: 'success', data: result });
+    return createJsonResponseWithCORS({ status: 'success', data: result });
   } catch (error) {
-    return createJsonResponse({ status: 'error', message: error.message });
+    return createJsonResponseWithCORS({ status: 'error', message: error.message });
   }
 }
 
 // --- MANEJADOR DE PETICIONES POST ---
 function doPost(e) {
+  // Configurar CORS headers para permitir peticiones desde Vercel
+  const response = {
+    status: 'error',
+    message: 'Error desconocido'
+  };
+  
   try {
-    const request = JSON.parse(e.postData.contents);
-    const { action, data } = request;
-    let result;
-
-    if (!action || !data) throw new Error("La solicitud POST debe incluir 'action' y 'data'.");
-
-    switch (action) {
-      case 'addPaciente': result = addPaciente(data); break;
-      case 'updatePaciente': result = updatePaciente(data); break;
-      case 'deletePaciente': result = deleteRowById(SHEET_PACIENTES, data.ID_Paciente); break;
-      
-      case 'addCita': result = addCita(data); break;
-      case 'updateCita': result = updateCita(data); break;
-      case 'getCitaById': result = getCitaById(data.ID_Cita); break;
-      case 'deleteCita': result = deleteCita(data); break;
-
-      case 'addHistorial': result = addHistorial(data); break;
-      case 'updateHistorial': result = updateHistorial(data); break;
-      case 'getHistorialById': result = getHistorialById(data.ID_Historial); break;
-      case 'deleteHistorial': result = deleteHistorial(data); break;
-
-      case 'updateField': result = updateField(data); break;
-
-      case 'debugData': result = debugData(); break;
-      case 'debugHeaders': result = debugSheetHeaders(); break;
-
-      default: throw new Error("Acción POST no válida.");
+    // Log de la petición recibida para debugging
+    console.log('POST request received:', {
+      postData: e.postData ? e.postData.contents : 'No postData',
+      parameters: e.parameter,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Verificar que existe postData
+    if (!e.postData || !e.postData.contents) {
+      throw new Error('No se recibieron datos POST');
     }
     
-    return createJsonResponse({ status: 'success', data: result });
+    const request = JSON.parse(e.postData.contents);
+    const { action, data } = request;
+    
+    console.log('Parsed request:', { action, dataKeys: Object.keys(data || {}) });
+    
+    if (!action) throw new Error("La solicitud POST debe incluir 'action'.");
+    if (!data) throw new Error("La solicitud POST debe incluir 'data'.");
+
+    let result;
+    
+    switch (action) {
+      case 'addPaciente': 
+        console.log('Executing addPaciente');
+        result = addPaciente(data); 
+        break;
+      case 'updatePaciente': 
+        console.log('Executing updatePaciente');
+        result = updatePaciente(data); 
+        break;
+      case 'deletePaciente': 
+        console.log('Executing deletePaciente');
+        result = deleteRowById(SHEET_PACIENTES, data.ID_Paciente); 
+        break;
+      
+      case 'addCita': 
+        console.log('Executing addCita with data:', data);
+        result = addCita(data); 
+        break;
+      case 'updateCita': 
+        console.log('Executing updateCita');
+        result = updateCita(data); 
+        break;
+      case 'getCitaById': 
+        console.log('Executing getCitaById');
+        result = getCitaById(data.ID_Cita); 
+        break;
+      case 'deleteCita': 
+        console.log('Executing deleteCita');
+        result = deleteCita(data); 
+        break;
+
+      case 'addHistorial': 
+        console.log('Executing addHistorial with data:', data);
+        result = addHistorial(data); 
+        break;
+      case 'updateHistorial': 
+        console.log('Executing updateHistorial');
+        result = updateHistorial(data); 
+        break;
+      case 'getHistorialById': 
+        console.log('Executing getHistorialById');
+        result = getHistorialById(data.ID_Historial); 
+        break;
+      case 'deleteHistorial': 
+        console.log('Executing deleteHistorial');
+        result = deleteHistorial(data); 
+        break;
+
+      case 'updateField': 
+        console.log('Executing updateField');
+        result = updateField(data); 
+        break;
+
+      case 'debugData': 
+        console.log('Executing debugData');
+        result = debugData(); 
+        break;
+      case 'debugHeaders': 
+        console.log('Executing debugHeaders');
+        result = debugSheetHeaders(); 
+        break;
+
+      default: 
+        throw new Error(`Acción POST no válida: ${action}`);
+    }
+    
+    console.log('Action executed successfully:', action);
+    return createJsonResponseWithCORS({ status: 'success', data: result });
+    
   } catch (error) {
-    return createJsonResponse({ status: 'error', message: error.message });
+    console.error('Error in doPost:', {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    return createJsonResponseWithCORS({ status: 'error', message: error.message });
   }
 }
 
@@ -424,6 +501,16 @@ function deleteRowById(sheet, id) {
 function createJsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Función mejorada para manejar CORS correctamente
+function createJsonResponseWithCORS(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    .setHeader('Access-Control-Max-Age', '3600');
 }
 
 // --- FUNCIONES DE DEBUG ---
