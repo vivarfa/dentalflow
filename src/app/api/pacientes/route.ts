@@ -25,7 +25,7 @@ export async function OPTIONS(request: NextRequest) {
   // Definir orígenes permitidos
   const allowedOrigins = process.env.NODE_ENV === 'production'
     ? ['https://dentalflow.vercel.app']
-    : ['http://localhost:3000', 'http://localhost:9004'];
+    : ['http://localhost:9004'];
   
   const isAllowedOrigin = origin && allowedOrigins.includes(origin);
   

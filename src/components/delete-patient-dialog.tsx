@@ -32,6 +32,10 @@ export function DeletePatientDialog({ patientId, onDataUpdate }: { patientId: st
           title: "Éxito",
           description: result.message,
         });
+        // Update data immediately if callback is provided
+        if (onDataUpdate) {
+          onDataUpdate();
+        }
         // Redirect to home and refresh the page to reflect changes.
         router.push("/");
         router.refresh();

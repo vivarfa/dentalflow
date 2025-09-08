@@ -7,8 +7,23 @@ import type { PatientFormData } from "@/types";
 // Usar el proxy interno en lugar de la URL directa
 const API_URL = '/api/proxy';
 const IS_CLIENT = typeof window !== 'undefined';
-const BASE_URL = IS_CLIENT ? window.location.origin : 'http://localhost:3000';
-const FULL_API_URL = IS_CLIENT ? API_URL : `${BASE_URL}${API_URL}`;
+
+// Función para obtener la URL base correcta
+function getBaseUrl() {
+  if (IS_CLIENT) {
+    return window.location.origin;
+  }
+  
+  // En el servidor, usar la URL de Vercel si está disponible
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // En desarrollo local - usar el puerto correcto
+  return 'http://localhost:9004';
+}
+
+const FULL_API_URL = IS_CLIENT ? API_URL : `${getBaseUrl()}${API_URL}`;
 
 const patientSchema = z.object({
   DNI: z.string().min(8, "El DNI debe tener al menos 8 caracteres"),

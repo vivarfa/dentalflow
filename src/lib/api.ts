@@ -5,7 +5,7 @@ import type { Patient } from "@/types";
 // Usar el proxy interno en lugar de la URL directa
 const API_URL = '/api/proxy';
 const IS_CLIENT = typeof window !== 'undefined';
-const BASE_URL = IS_CLIENT ? window.location.origin : 'http://localhost:3000';
+const BASE_URL = IS_CLIENT ? window.location.origin : 'http://localhost:9004';
 const FULL_API_URL = IS_CLIENT ? API_URL : `${BASE_URL}${API_URL}`;
 
 /**
