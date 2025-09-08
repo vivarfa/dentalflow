@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { PatientFormData } from "@/types";
 
-// Usar el proxy API local en lugar de llamar directamente a Google Apps Script
-const PROXY_API_URL = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:9004/api/pacientes' 
-  : '/api/pacientes';
+// Usar el proxy interno en lugar de la URL directa
+const API_URL = '/api/proxy';
+const IS_CLIENT = typeof window !== 'undefined';
+const BASE_URL = IS_CLIENT ? window.location.origin : 'http://localhost:3000';
+const FULL_API_URL = IS_CLIENT ? API_URL : `${BASE_URL}${API_URL}`;
 
 const patientSchema = z.object({
   DNI: z.string().min(8, "El DNI debe tener al menos 8 caracteres"),
@@ -60,7 +61,7 @@ async function postToActionAPI(action: string, data: any): Promise<any> {
         timestamp: new Date().toISOString()
     });
     
-    const response = await fetch(PROXY_API_URL, {
+    const response = await fetch(FULL_API_URL, {
         method: "POST",
         headers: { 
             "Content-Type": "application/json",
@@ -184,6 +185,38 @@ export async function deletePatient(id: string): Promise<DeleteResult> {
         const error = e as Error;
         return { success: false, message: `Error de red: ${error.message}` };
     }
+}
+
+export async function deletePaciente(id: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const response = await fetch(FULL_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'deletePaciente',
+        id
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      revalidatePath('/');
+      return { success: true, message: 'Paciente eliminado correctamente.' };
+    } else {
+      return { success: false, message: result.message || 'Error al eliminar el paciente.' };
+    }
+  } catch (e) {
+    const error = e as Error;
+    return { success: false, message: `Error de red: ${error.message}` };
+  }
 }
 
 export async function addCita(prevState: FormState, formData: FormData): Promise<FormState> {

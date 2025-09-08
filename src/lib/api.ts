@@ -2,8 +2,11 @@
 
 import type { Patient } from "@/types";
 
-// La URL del proxy sigue siendo la misma.
-const PROXY_API_URL = '/api/pacientes';
+// Usar el proxy interno en lugar de la URL directa
+const API_URL = '/api/proxy';
+const IS_CLIENT = typeof window !== 'undefined';
+const BASE_URL = IS_CLIENT ? window.location.origin : 'http://localhost:3000';
+const FULL_API_URL = IS_CLIENT ? API_URL : `${BASE_URL}${API_URL}`;
 
 /**
  * Función centralizada para realizar peticiones a la API.
@@ -58,7 +61,7 @@ async function fetchAPI(url: string, returnArrayOnError = true) {
  * Siempre traerá datos frescos gracias a la nueva configuración de fetchAPI.
  */
 export async function getPacientesWithAppointments(): Promise<Patient[]> {
-    const url = `${PROXY_API_URL}?action=getPacientesWithAppointments`;
+    const url = `${FULL_API_URL}?action=getPacientesWithAppointments`;
     return fetchAPI(url, true); // El segundo parámetro es true por si hay un error, devuelve un array vacío.
 }
 
@@ -69,7 +72,7 @@ export async function getPacientesWithAppointments(): Promise<Patient[]> {
  */
 export async function getPacienteById(id: string): Promise<Patient | null> {
     const timestamp = Date.now();
-    const url = `${PROXY_API_URL}?action=getPacienteById&id=${encodeURIComponent(id)}&_t=${timestamp}`;
+    const url = `${FULL_API_URL}?action=getPacienteById&id=${encodeURIComponent(id)}&_t=${timestamp}`;
     return fetchAPI(url, false); // El segundo parámetro es false por si hay un error, devuelve null.
 }
 
@@ -78,7 +81,7 @@ export async function getPacienteById(id: string): Promise<Patient | null> {
  * Siempre traerá datos frescos.
  */
 export async function searchPacientes(query: string): Promise<Patient[]> {
-    const url = `${PROXY_API_URL}?action=searchPacientes&query=${encodeURIComponent(query)}`;
+    const url = `${FULL_API_URL}?action=searchPacientes&query=${encodeURIComponent(query)}`;
     return fetchAPI(url, true);
 }
 
