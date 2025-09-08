@@ -505,12 +505,12 @@ function createJsonResponse(obj) {
 
 // Función mejorada para manejar CORS correctamente
 function createJsonResponseWithCORS(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    .setHeader('Access-Control-Max-Age', '3600');
+  const output = ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+  
+  // En Google Apps Script, los headers CORS se manejan automáticamente
+  // cuando se despliega como aplicación web con acceso público
+  return output;
 }
 
 // --- FUNCIONES DE DEBUG ---
