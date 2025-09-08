@@ -18,6 +18,29 @@ if (!API_URL) {
  */
 export const dynamic = 'force-dynamic';
 
+// --- MANEJADOR DE PETICIONES OPTIONS (CORS Preflight) ---
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  
+  // Definir orígenes permitidos
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? ['https://dentalflow.vercel.app']
+    : ['http://localhost:3000', 'http://localhost:9004'];
+  
+  const isAllowedOrigin = origin && allowedOrigins.includes(origin);
+  
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': isAllowedOrigin ? origin : '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
+}
+
 // --- MANEJADOR DE PETICIONES GET (Leer y Buscar) ---
 export async function GET(request: NextRequest) {
   try {
@@ -44,18 +67,43 @@ export async function GET(request: NextRequest) {
       console.error('Google Apps Script response not ok:', response.status, errorText);
       return NextResponse.json(
         { error: `Google Apps Script error: ${response.status}`, details: errorText },
-        { status: response.status }
+        { 
+          status: response.status,
+          headers: {
+            'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+              ? 'https://dentalflow.vercel.app' 
+              : '*'
+          }
+        }
       );
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    
+    // Agregar headers CORS a la respuesta
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+        ? 'https://dentalflow.vercel.app' 
+        : '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
+      'Access-Control-Allow-Credentials': 'true'
+    };
+    
+    return NextResponse.json(data, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Proxy API GET error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+            ? 'https://dentalflow.vercel.app' 
+            : '*'
+        }
+      }
     );
   }
 }
@@ -92,7 +140,14 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json(
         { error: `Google Apps Script error: ${response.status}`, details: errorText },
-        { status: response.status }
+        { 
+          status: response.status,
+          headers: {
+            'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+              ? 'https://dentalflow.vercel.app' 
+              : '*'
+          }
+        }
       );
     }
 
@@ -102,7 +157,17 @@ export async function POST(request: NextRequest) {
       hasData: !!result.data
     });
     
-    return NextResponse.json(result);
+    // Agregar headers CORS a la respuesta POST
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+        ? 'https://dentalflow.vercel.app' 
+        : '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
+      'Access-Control-Allow-Credentials': 'true'
+    };
+    
+    return NextResponse.json(result, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Error in POST /api/pacientes:', {
@@ -116,7 +181,14 @@ export async function POST(request: NextRequest) {
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+            ? 'https://dentalflow.vercel.app' 
+            : '*'
+        }
+      }
     );
   }
 }
