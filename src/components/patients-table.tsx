@@ -486,12 +486,32 @@ const PatientRow = memo(({ patient }: { patient: Patient }) => {
       );
     }
 
+    // Obtener fecha actual en zona horaria local
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const appointmentDate = new Date(patient.fechaProximaCita);
-    appointmentDate.setHours(0, 0, 0, 0);
-    const diffTime = appointmentDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const todayStr = today.getFullYear() + '-' + 
+                    String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(today.getDate()).padStart(2, '0');
+    
+    // Parsear fecha de cita asegurando formato correcto
+    let appointmentDateStr = patient.fechaProximaCita;
+    if (appointmentDateStr.includes('/')) {
+      // Convertir formato DD/MM/YYYY a YYYY-MM-DD
+      const parts = appointmentDateStr.split('/');
+      if (parts.length === 3) {
+        appointmentDateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+    }
+    
+    // Comparar fechas como strings para evitar problemas de zona horaria
+    const diffDays = Math.floor((new Date(appointmentDateStr).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Debug: mostrar las fechas para verificar
+    console.log('Debug fechas:', {
+      today: todayStr,
+      appointmentDate: appointmentDateStr,
+      fechaOriginal: patient.fechaProximaCita,
+      diffDays
+    });
 
     if (diffDays === 0) {
       return (

@@ -130,6 +130,10 @@ function doPost(e) {
         console.log('Executing deletePaciente');
         result = deleteRowById(SHEET_PACIENTES, data.ID_Paciente); 
         break;
+      case 'deleteMultiplePacientes': 
+        console.log('Executing deleteMultiplePacientes');
+        result = deleteMultiplePacientes(data); 
+        break;
       
       case 'addCita': 
         console.log('Executing addCita with data:', data);
@@ -481,20 +485,109 @@ function deleteRowById(sheet, id) {
 
     if (rowIndex === -1) throw new Error("ID no encontrado para eliminar.");
 
-    // En lugar de eliminar la fila, cambiar el estado a 'Inactivo'
     if (sheet.getName() === 'Pacientes') {
-      // Para pacientes, cambiar el estado en la columna 13 (Estado)
-      sheet.getRange(rowIndex + 2, 13).setValue('Inactivo');
-      clearCache(); // Limpiar caché después de cambiar estado
-      return { message: "Paciente marcado como inactivo exitosamente." };
+      // NUEVA FUNCIONALIDAD: Eliminación completa en cascada
+      deleteCitasByPacienteId(id);
+      deleteHistorialByPacienteId(id);
+      
+      // Eliminar físicamente el paciente (no solo marcarlo como inactivo)
+      sheet.deleteRow(rowIndex + 2);
+      clearCache();
+      return { message: "Paciente y todos sus datos relacionados eliminados completamente." };
     } else {
       // Para otras hojas (citas, historial), eliminar físicamente
       sheet.deleteRow(rowIndex + 2);
-      clearCache(); // Limpiar caché después de eliminar
+      clearCache();
       return { message: "Fila eliminada exitosamente." };
     }
   } finally {
     lock.releaseLock();
+  }
+}
+
+// Nuevas funciones auxiliares para eliminación en cascada
+function deleteCitasByPacienteId(pacienteId) {
+  const citasSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Citas');
+  if (!citasSheet || citasSheet.getLastRow() <= 1) return;
+  
+  const data = citasSheet.getDataRange().getValues();
+  
+  // Buscar desde la última fila hacia arriba para evitar problemas de índices
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (data[i][2] === pacienteId) { // Columna C (ID_Paciente)
+      citasSheet.deleteRow(i + 1);
+    }
+  }
+}
+
+function deleteHistorialByPacienteId(pacienteId) {
+  const historialSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Historial');
+  if (!historialSheet || historialSheet.getLastRow() <= 1) return;
+  
+  const data = historialSheet.getDataRange().getValues();
+  
+  // Buscar desde la última fila hacia arriba para evitar problemas de índices
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (data[i][2] === pacienteId) { // Columna C (ID_Paciente)
+      historialSheet.deleteRow(i + 1);
+    }
+  }
+}
+
+// Nueva función para eliminación múltiple
+function deleteMultiplePacientes(data) {
+  try {
+    const pacienteIds = data.pacienteIds;
+    if (!Array.isArray(pacienteIds) || pacienteIds.length === 0) {
+      throw new Error("No se proporcionaron IDs de pacientes para eliminar.");
+    }
+
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000); // Más tiempo para operaciones múltiples
+    
+    try {
+      let deletedCount = 0;
+      const errors = [];
+      
+      for (const pacienteId of pacienteIds) {
+        try {
+          // Eliminar citas e historial relacionados
+          deleteCitasByPacienteId(pacienteId);
+          deleteHistorialByPacienteId(pacienteId);
+          
+          // Eliminar el paciente
+          const result = deleteRowById(SHEET_PACIENTES, pacienteId);
+          if (result.message.includes("eliminados") || result.message.includes("eliminada")) {
+            deletedCount++;
+          }
+        } catch (error) {
+          errors.push(`Error eliminando paciente ${pacienteId}: ${error.message}`);
+        }
+      }
+      
+      clearCache();
+      
+      if (errors.length > 0) {
+        return {
+          message: `Se eliminaron ${deletedCount} pacientes. Errores: ${errors.join(', ')}`,
+          partialSuccess: true,
+          deletedCount,
+          errors
+        };
+      }
+      
+      return {
+        message: `Se eliminaron exitosamente ${deletedCount} pacientes y todos sus datos relacionados.`,
+        deletedCount
+      };
+    } finally {
+      lock.releaseLock();
+    }
+  } catch (error) {
+    return {
+      message: `Error en eliminación múltiple: ${error.message}`,
+      error: true
+    };
   }
 }
 
