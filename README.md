@@ -78,6 +78,18 @@ Esta es la parte más importante. Aquí crearemos nuestra "base de datos".
     npm install
     ```
 
+3.  **Actualizando tu Proyecto en GitHub:**
+    ```bash
+    # El punto (.) significa "todos los archivos y carpetas"
+git add .
+    
+    # El punto (.) significa "todos los archivos y carpetas"
+git commit -m "Actualicé el archivo README con la nueva licencia"
+    
+    # 'origin' es tu repositorio en GitHub y 'main' es la rama principal
+git push
+    ```
+
 ### **Paso 3: Desplegar en Vercel**
 
 1.  **Sube tu proyecto a GitHub:**
