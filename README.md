@@ -78,19 +78,26 @@ Esta es la parte más importante. Aquí crearemos nuestra "base de datos".
     npm install
     ```
 
-3.  **Actualizando tu Proyecto en GitHub:**
-    # El punto (.) significa "todos los archivos y carpetas"
-    ```bash
-    git add .
-    ```
-    # El punto (.) significa "todos los archivos y carpetas"
-    ```bash
-    git commit -m "Actualicé el archivo README con la nueva licencia"
-    ```
-    # 'origin' es tu repositorio en GitHub y 'main' es la rama principal
-    ```bash
-    git push
-    ```
+3.  **Actualiza tu Proyecto en GitHub:**
+    *   Después de hacer cambios, usa estos comandos para subir tus actualizaciones a tu repositorio.
+
+    *   **Paso A: Prepara los archivos**
+        ```bash
+        # El punto (.) agrega todos los archivos modificados
+        git add .
+        ```
+
+    *   **Paso B: Guarda los cambios con un mensaje**
+        ```bash
+        # El mensaje describe el cambio que hiciste
+        git commit -m "Actualizo el archivo README"
+        ```
+
+    *   **Paso C: Sube los cambios a GitHub**
+        ```bash
+        # Esto envía tus cambios a la nube
+        git push
+        ```
 
 ### **Paso 3: Desplegar en Vercel**
 
